@@ -1,14 +1,14 @@
-Electives,,,,,,,,,,,
-Basket-1,Course Code,Strength,Basket-2,Course Code,Strength,Basket-3,Course Code,Strength,Basket-4,Course Code,Strength
-sem-2,Total: 350,,,,,,,,,,
-Data Science with Python,CS152,32,Linux for Engineers,DS151,59,,,,,,
-Introduction to Digital VLSI Design,EC154,48,Introduction to Holistic Personality Development,HS156,45,,,,,,
-Industry Insights Program Part 1,HS155,67,Photography101,HS154,99,,,,,,
-,,,,,,,,,,,
-sem-6,Total:300,,,,,,,,,,
-Deep Computer Vision,CS471,18,Blockchain Technology,CS455,36,Automotive Embedded and Multimedia Systems,EC362,57,Data Analytics and Visualization,DS355,100
-Large Languange Models,DS357,119,Introduction to 5G Network,EC361,40,Computer Graphics,CS462,82,Statistics for Health Technology,DS351,61
-Natural Language Processing,CS458,64,Model Checking,CS365,27,Machine learning,CS307,92,Medical Image Analysis,DS356,94
-Deep Speech Processing,DS358,99,Quantum Communication,PH352,46,Virtualization and Cloud Computing,CS469,69,Bioinformatics,CS472,45
-,,,Quantum HPC and AI,PH353,43,,,,,,
-,,,Design Thinking and Innovation,ASD351,108,,,,,,
+Electives,,,,,,,,,,,,,,,
+Basket-1,Course Code,Faculty,Strength,Basket-2,Course Code,Faculty,Strength,Basket-3,Course Code,Faculty,Strength,Basket-4,Course Code,Faculty,Strength
+sem-2,Total: 350,,,,,,,,,,,,,,
+Data Science with Python,CS152,Dr. Abdul Wahid,32,Linux for Engineers,DS151,Dr. Shirshendu Layek,59,,,,,,,,
+Introduction to Digital VLSI Design,EC154,Dr. Prakash Pawar,48,Introduction to Holistic Personality Development,HS156,Prof. Chachadi / Dr. Chandrika K,45,,,,,,,,
+Industry Insights Program Part 1,HS155,Mr. Ram Subramanian /  Mr. Sasi Kumar Sundara Rajan,67,Photography101,HS154,Dr. Prabhu Prasad Bm,99,,,,,,,,
+,,,,,,,,,,,,,,,
+sem-6,Total:300,,,,,,,,,,,,,,
+Deep Computer Vision,CS471,Dr. Chinmayanand,18,Blockchain Technology,CS455,Dr. Rajendra H,36,Automotive Embedded and Multimedia Systems,EC362,Mr. Jagadeesh K / Dr. Sibasankar Padhy,57,Data Analytics and Visualization,DS355,Dr. Sunil Ck,100
+Large Languange Models,DS357,Dr. Sunil Saumya,119,Introduction to 5G Network,EC361,Dr. Jagadeesha R Bhat,40,Computer Graphics,CS462,Dr. Vivekraj V K,82,Statistics for Health Technology,DS351,Dr. Ramesh Athe,61
+Natural Language Processing,CS458,Dr. Krishnendu,64,Model Checking,CS365,Dr. Pavan,27,Machine learning,CS307,Dr. Deepak K T / Dr. Girish G N / Dr. Krishnendu Ghosh,92,Medical Image Analysis,DS356,Dr. Girish G N ,94
+Deep Speech Processing,DS358,Prof. Srm Prasanna,99,Quantum Communication,PH352,Dr. Aswath B,46,Virtualization and Cloud Computing,CS469,Dr. Malay,69,Bioinformatics,CS472,Dr. Sunil Kumar Pv,45
+,,,,Quantum HPC and AI,PH353,Dr. Manish M (Dr. Aswath),43,,,,,,,,
+,,,,Design Thinking and Innovation,ASD351,Dr. Jagadeesha R Bhat,108,,,,,,,,
