@@ -29,21 +29,9 @@ BREAK_SLOTS = {
     "16:30-17:00": "Snack Break"
 }
 
-# Room capacities
-CLASSROOM_CAPACITIES = {
-    "C002": 120, "C003": 120, "C004": 240,
-    "C101": 86, "C102": 86, "C104": 86,
-    "C202": 86, "C203": 86, "C204": 86, "C206": 86,
-    "C302": 86, "C303": 86, "C304": 86, "C305": 86
-}
-
-LAB_CAPACITIES = {
-    "L105": 50, "L106": 50, "L107": 50,
-    "L206": 50, "L207": 50, "L208": 50, "L209": 50
-}
-
-CLASSROOMS = sorted(list(CLASSROOM_CAPACITIES.keys()))
-LABS = sorted(list(LAB_CAPACITIES.keys()))
+CLASSROOMS = ["C002","C003","C004","C101","C102","C104",
+              "C202","C203","C204","C206","C302","C303","C304","C305"]
+LABS       = ["L105","L106","L107","L206","L207","L208"]
 
 def create_dirs():
     for d in [
@@ -57,30 +45,17 @@ def create_dirs():
         os.makedirs(d, exist_ok=True)
 
 def save_faculty_timetables(tt):
-    faculty_map = {}
-
-    # First pass: collect all unique faculty names and standardize them
+    all_faculties = set()
     for d in WEEKDAYS:
         for sl in TIME_SLOTS:
             for r in CLASSROOMS + LABS:
                 entry = tt[d][sl][r]
                 if entry and entry[0] != "BREAK":
                     fac_str = entry[1]
-                    # Split combined faculty names by various separators
-                    for f_part in re.split(r'\s*/\s*|\s*&\s*|\s+and\s+|\s*\(Course\s+Coordinator:\s*|\)\s*' , str(fac_str)):
-                        f_part = f_part.strip()
-                        if not f_part:
-                            continue
-                        
-                        # Cleaned name for key: lowercase, no titles/dots/spaces
-                        cleaned = re.sub(r'^(dr|prof|mr|ms)\.?\s*', '', f_part.lower()).replace('.', '').replace(' ', '')
-                        cleaned = re.sub(r'\(.*?\)', '', cleaned) # remove coordinator info
+                    for f in str(fac_str).split(' / '):
+                        all_faculties.add(f.strip())
 
-                        if cleaned and cleaned not in faculty_map:
-                            faculty_map[cleaned] = f_part # Use the first-seen version for display
-
-    # Create timetables for each unique faculty
-    for cleaned_name, display_name in sorted(faculty_map.items()):
+    for fac in sorted(list(all_faculties)):
         pivot = pd.DataFrame(index=WEEKDAYS, columns=TIME_SLOTS).fillna("")
         for d in WEEKDAYS:
             for sl in TIME_SLOTS:
@@ -89,30 +64,23 @@ def save_faculty_timetables(tt):
                     entry = tt[d][sl][r]
                     if entry and entry[0] != "BREAK":
                         fac_str = entry[1]
-                        is_involved = False
-                        for f_part in re.split(r'\s*/\s*|\s*&\s*|\s+and\s+|\s*\(Course\s+Coordinator:\s*|\)\s*', str(fac_str)):
-                            f_part_cleaned = re.sub(r'^(dr|prof|mr|ms)\.?\s*', '', f_part.strip().lower()).replace('.', '').replace(' ', '')
-                            f_part_cleaned = re.sub(r'\(.*?\)', '', f_part_cleaned)
-                            if f_part_cleaned == cleaned_name:
-                                is_involved = True
-                                break
-                        
-                        if is_involved:
+                        if fac in [f.strip() for f in fac_str.split(' / ')]:
+                            # Determine branch and semester for display
                             entry_groups = entry[4]
                             branch_sem_str = ""
                             if isinstance(entry_groups, list):
-                                branch_sem_str = ", ".join([f"{b}-{s.replace('.0','')}" for b, s in entry_groups])
+                                branch_sem_str = ", ".join([f"{b}-{s}" for b, s in entry_groups])
                             else:
-                                branch_sem_str = f"{entry_groups[0]}-{entry_groups[1].replace('.0','')}"
+                                branch_sem_str = f"{entry_groups[0]}-{entry_groups[1]}"
                             
                             entries_for_slot.append(f"{entry[2]}-{entry[3]}-{r}-{branch_sem_str}")
                 if entries_for_slot:
-                    pivot.loc[d, sl] = " | ".join(sorted(list(set(entries_for_slot))))
+                    pivot.loc[d, sl] = " | ".join(entries_for_slot)
         
-        safe_filename = re.sub(r'[^a-zA-Z0-9_ .-]', '', display_name).strip()
+        # Create the directory if it doesn't exist
         os.makedirs("Timetables/By Faculty", exist_ok=True)
-        pivot.to_csv(f"Timetables/By Faculty/{safe_filename}.csv")
-        print(f"Faculty Timetable -> {safe_filename}.csv")
+        pivot.to_csv(f"Timetables/By Faculty/{fac}.csv")
+        print(f"Faculty Timetable -> {fac}.csv")
 
 def save_room_timetables(df):
     real = df[df['Session Type'] != "Break"]
@@ -151,6 +119,7 @@ def init_timetable():
     teacher_schedule = {day: {slot: {} for slot in TIME_SLOTS} for day in WEEKDAYS}
     return tt, teacher_schedule
 
+<<<<<<< HEAD
 def find_available_rooms(tt, day, slot, strength, is_practical, semester=None):
     """Finds available rooms or labs based on strength, session type, and semester floor constraints."""
     
@@ -204,6 +173,9 @@ def has_conflict(tt, day, slot, fac, branch, sem, teacher_schedule):
         if f in teacher_schedule[day][slot]:
             return True
 
+=======
+def has_conflict(tt, day, slot, fac, branch, sem):
+>>>>>>> parent of 51eb786 (Room Kind of fixed But cse A and B logic not and also ltpsc some error)
     for r in CLASSROOMS + LABS:
         e = tt[day][slot][r]
         if isinstance(e,tuple) and e[0]!="BREAK":
@@ -242,24 +214,19 @@ def load_and_group_electives(filepath):
         return {}
     df=pd.read_csv(filepath, header=1)
     electives={}
-    # Each basket has 4 columns: Title, Code, Faculty, Strength
-    for i in range(0, len(df.columns), 4):
-        bcol, ccol, fcol, scol = df.columns[i], df.columns[i+1], df.columns[i+2], df.columns[i+3]
-        if "Basket" not in bcol:
-            continue
-        basket = bcol.strip()
-        electives[basket] = {}
-        # Select the 4 columns for the current basket and drop rows with any NaN values
-        temp = df[[bcol, ccol, fcol, scol]].dropna().copy()
-        temp.columns = ['title', 'code', 'faculty', 'strength']
-        for _, r in temp.iterrows():
-            sem = get_semester_from_code(r['code'])
+    for i in range(0,len(df.columns),2):
+        bcol,ccol=df.columns[i],df.columns[i+1] if i+1<len(df.columns) else (None,None)
+        if "Basket" not in bcol or ccol is None: continue
+        basket=bcol.strip()
+        electives[basket]={}
+        temp=df[[bcol,ccol]].dropna().copy()
+        temp.columns=['title','code']
+        for _,r in temp.iterrows():
+            sem=get_semester_from_code(r['code'])
             if sem:
-                electives[basket].setdefault(sem, []).append({
-                    'title': r['title'].strip(),
-                    'code': str(r['code']).strip(),
-                    'faculty': r['faculty'].strip(),
-                    'strength': int(r['strength'])
+                electives[basket].setdefault(sem,[]).append({
+                    'title':r['title'].strip(),
+                    'code':str(r['code']).strip()
                 })
     return electives
 
@@ -331,6 +298,7 @@ def schedule_electives(tt, electives_data, all_branches, sched, teacher_schedule
                     if len(rooms_free) < len(subs):
                         continue
                     
+<<<<<<< HEAD
                     # Assign rooms based on strength
                     subs.sort(key=lambda s: s['strength'], reverse=True) # Prioritize larger electives
                     rooms_assigned = 0
@@ -358,6 +326,23 @@ def schedule_electives(tt, electives_data, all_branches, sched, teacher_schedule
                     if rooms_assigned == len(subs):
                         found = True
                         break
+=======
+                    chosen = random.sample(rooms_free, len(subs))
+                    for i, sub in enumerate(subs):
+                        if placed[sub['code']][stype] >= req:
+                            continue
+                        
+                        room=chosen[i]
+                        # Retain original faculty name if available, otherwise use a placeholder
+                        fac = sub.get('Faculty', "") 
+                        entry=(sub['code'], fac, sub['title'],stype,
+                               [(b,sem) for b in all_branches])
+                        tt[day][slot][room] = entry
+                        sched[f"{label}-{stype}"] = sched.get(f"{label}-{stype}", 0) + 1
+                        placed[sub['code']][stype] += 1
+                    found = True
+                    break
+>>>>>>> parent of 51eb786 (Room Kind of fixed But cse A and B logic not and also ltpsc some error)
                 
                 if not found:
                     print(f"WARNING: Could not schedule all {stype} for {label} Sem {sem}")
@@ -381,7 +366,6 @@ def load_data(branches):
     df['LTPSC']=df.apply(extract_ltpsc,axis=1)
     df=df[df['LTPSC'].notnull()]
     df[['L','T','P','S','C']]=pd.DataFrame(df['LTPSC'].tolist(),index=df.index)
-    df['Strength'] = pd.to_numeric(df.get('Strength', 0), errors='coerce').fillna(0).astype(int)
     df.drop_duplicates(subset=["Course Code","branch"],inplace=True)
     df['Semester']=df['Semester'].astype(str)
     return df
@@ -414,17 +398,20 @@ def generate(branches, electives_filepath):
                 'Course Title':f"{label} Elective",
                 'Faculty': '', # Faculty for grouped electives is not directly available here
                 'Semester':sem,
-                'branch':b,
-                'Strength': 0, # Electives don't have strength
+                'branch':b,'L':2,'T':1,'P':0,'S':0,'C':3
             })
     if extra:
         e_df=pd.DataFrame(extra)
-        df=pd.concat([core_df,e_df], ignore_index=True)
+        print("DEBUG: Elective DataFrame before concat:")
+        print(e_df.head())
+        df=pd.concat([core_df,e_df],
+                     ignore_index=True)
     else:
         df = core_df
 
     print("--- Scheduling Core Courses ---")
     sessions=[]
+<<<<<<< HEAD
     for _, row in core_df.iterrows():
         code, title, fac_str, branch, sem, strength, L, T, P = (
             row['Course Code'], row['Course Title'], row['Faculty'], 
@@ -453,6 +440,19 @@ def generate(branches, electives_filepath):
             sessions += [{'code':code,'title':title,'fac':faculties[0],'groups':[(branch, sem)],'type':'Lecture', 'strength': strength}]*L
             sessions += [{'code':code,'title':title,'fac':faculties[0],'groups':[(branch, sem)],'type':'Tutorial', 'strength': strength}]*T
             sessions += [{'code':code,'title':title,'fac':faculties[0],'groups':[(branch, sem)],'type':'Practical', 'strength': strength}]*P
+=======
+    for (code,fac_str),grp in df.groupby(['Course Code','Faculty']):
+        title=grp['Course Title'].iloc[0]
+        groups=list(zip(grp['branch'],grp['Semester']))
+        L,T,P=int(grp['L'].max()),int(grp['T'].max()),int(grp['P'].max())
+        
+        faculties = [f.strip() for f in fac_str.split(' / ')]
+        
+        for fac in faculties:
+            sessions += [{'code':code,'title':title,'fac':fac,'groups':groups,'type':'Lecture', 'needed_L': L, 'needed_T': T, 'needed_P': P}]*L
+            sessions += [{'code':code,'title':title,'fac':fac,'groups':groups,'type':'Tutorial', 'needed_L': L, 'needed_T': T, 'needed_P': P}]*T
+            sessions += [{'code':code,'title':title,'fac':fac,'groups':groups,'type':'Practical', 'needed_L': L, 'needed_T': T, 'needed_P': P}]*P
+>>>>>>> parent of 51eb786 (Room Kind of fixed But cse A and B logic not and also ltpsc some error)
 
     max_attempts=5
     for attempt in range(max_attempts):
@@ -461,6 +461,12 @@ def generate(branches, electives_filepath):
         slots=[(d,sl) for d in WEEKDAYS for sl in TIME_SLOTS if sl not in BREAK_SLOTS]
         random.shuffle(slots)
         for day,slot in slots:
+<<<<<<< HEAD
+=======
+            avail_rooms=[r for r in CLASSROOMS if tt[day][slot][r] is None]
+            avail_labs =[r for r in LABS       if tt[day][slot][r] is None]
+            used_fac={e[1] for e in tt[day][slot].values() if e and e[0]!="BREAK"}
+>>>>>>> parent of 51eb786 (Room Kind of fixed But cse A and B logic not and also ltpsc some error)
             used_grp=set()
             for e in tt[day][slot].values():
                 if e and e[0]!="BREAK":
@@ -468,8 +474,11 @@ def generate(branches, electives_filepath):
                     if isinstance(grp,list): used_grp.update(grp)
                     else: used_grp.add((e[4],e[5]))
             for sess in sessions[:]:
+                print(f"DEBUG: Considering session: {sess['code']}-{sess['type']} by {sess['fac']} for {sess['groups']}")
+                print(f"DEBUG: Needed: L={sess['needed_L']}, T={sess['needed_T']}, P={sess['needed_P']}")
                 is_prac = sess['type']=='Practical'
                 
+<<<<<<< HEAD
                 if is_prac:
                     # Try to schedule a 2-hour block first
                     next_slot_index = TIME_SLOTS.index(slot) + 1
@@ -495,10 +504,22 @@ def generate(branches, electives_filepath):
                 
                 # Check faculty and group conflicts
                 if has_conflict(tt, day, slot, sess['fac'], sess['groups'][0][0], sess['groups'][0][1], teacher_schedule):
+=======
+                # Check room availability
+                if (is_prac and not avail_labs) or (not is_prac and not avail_rooms):
+                    print(f"DEBUG: Skipping {sess['code']}-{sess['type']}: No available {'lab' if is_prac else 'room'}.")
+                    continue
+                
+                # Check faculty and group conflicts
+                if sess['fac'] in used_fac:
+                    print(f"DEBUG: Skipping {sess['code']}-{sess['type']}: Faculty {sess['fac']} already busy.")
+>>>>>>> parent of 51eb786 (Room Kind of fixed But cse A and B logic not and also ltpsc some error)
                     continue
                 if any(g in used_grp for g in sess['groups']):
+                    print(f"DEBUG: Skipping {sess['code']}-{sess['type']}: Group conflict.")
                     continue
 
+<<<<<<< HEAD
                 # CSE Section Split Logic
                 is_cse_core = any(b.upper() == 'CSE' for b, s in sess['groups']) and not is_prac
                 if is_cse_core:
@@ -596,20 +617,34 @@ def generate(branches, electives_filepath):
                     sched.setdefault(sess['code'], {'Lecture': 0, 'Tutorial': 0, 'Practical': 0})[sess['type']] += 1
                     placed+=1
                     continue
+=======
+                # NEW LTPSC CHECK
+                current_scheduled_count = sched.get(sess['code'], {}).get(sess['type'], 0)
+                needed_count = sess[f'needed_{sess["type"][0]}'] # e.g., 'needed_L' for 'Lecture'
+                print(f"DEBUG: Current scheduled count for {sess['code']}-{sess['type']}: {current_scheduled_count}/{needed_count}")
+                if current_scheduled_count >= needed_count:
+                    print(f"DEBUG: Skipping {sess['code']}-{sess['type']}: LTPSC requirement already met.")
+                    continue # Already scheduled enough sessions of this type for this subject
+>>>>>>> parent of 51eb786 (Room Kind of fixed But cse A and B logic not and also ltpsc some error)
 
                 # Historical conflict
                 conflict=False
                 for b,s in sess['groups']:
                     if count_subject_sessions_on_day(tt,day,sess['code'],b,s)>=2:
+                        print(f"DEBUG: Skipping {sess['code']}-{sess['type']}: Historical conflict (more than 2 sessions on day for branch-sem). Branch: {b}, Sem: {s}")
                         conflict=True; break
                     if sess['type']=='Lecture' and count_subject_sessions_on_day(tt,day,sess['code'],b,s,'Lecture')>0:
+                        print(f"DEBUG: Skipping {sess['code']}-{sess['type']}: Historical conflict (more than 1 lecture on day for branch-sem). Branch: {b}, Sem: {s}")
                         conflict=True; break
                     if sess['type']=='Practical' and count_subject_sessions_on_day(tt,day,sess['code'],b,s,'Lecture')>0:
+                        print(f"DEBUG: Skipping {sess['code']}-{sess['type']}: Historical conflict (practical after lecture on day for branch-sem). Branch: {b}, Sem: {s}")
                         conflict=True; break
                     if sess['type']=='Lecture' and count_subject_sessions_on_day(tt,day,sess['code'],b,s,'Practical')>0:
+                        print(f"DEBUG: Skipping {sess['code']}-{sess['type']}: Historical conflict (lecture after practical on day for branch-sem). Branch: {b}, Sem: {s}")
                         conflict=True; break
                 if conflict: continue
 
+<<<<<<< HEAD
                 # CSE Section Split Logic
                 is_cse_core = any(b.upper() == 'CSE' for b, s in sess['groups']) and not is_prac
                 if is_cse_core:
@@ -665,6 +700,18 @@ def generate(branches, electives_filepath):
                     sessions.remove(sess)
                     sched.setdefault(sess['code'], {'Lecture': 0, 'Tutorial': 0, 'Practical': 0})[sess['type']] += 1
                     placed+=1
+=======
+                room = avail_labs.pop(0) if is_prac else avail_rooms.pop(0)
+                entry=(sess['code'],sess['fac'],sess['title'],sess['type'],sess['groups'])
+                tt[day][slot][room]=entry
+                used_fac.add(sess['fac'])
+                used_grp.update(sess['groups'])
+                sessions.remove(sess)
+                # Update sched correctly
+                sched.setdefault(sess['code'], {'Lecture': 0, 'Tutorial': 0, 'Practical': 0})[sess['type']] += 1
+                placed+=1
+                print(f"DEBUG: Placed {sess['code']}-{sess['type']} at {day} {slot} in {room}.")
+>>>>>>> parent of 51eb786 (Room Kind of fixed But cse A and B logic not and also ltpsc some error)
         if placed==0 and attempt==max_attempts-1 and sessions:
             print(f"Warning: Couldn't place all sessions; {len(sessions)} remain. Details:")
             for sess in sessions:
@@ -749,43 +796,67 @@ def split_by_semester(df):
 
 def split_by_branch_sem(df, electives_data, tt):
     real = df[df['Session Type'] != "Break"]
-    all_branches = real['Branch'].unique()
-    
-    # Add CSE A and CSE B if CSE is present
-    if 'CSE' in all_branches:
-        all_branches = list(all_branches)
-        if 'CSE A' not in all_branches: all_branches.append('CSE A')
-        if 'CSE B' not in all_branches: all_branches.append('CSE B')
-
-    for b in all_branches:
+    for b in real['Branch'].unique():
         for sem in real['Semester'].unique():
             clean = sem.replace('.0', '')
-            
-            # Filter for the specific branch/section and semester
-            if b in ['CSE A', 'CSE B']:
-                # Include general CSE courses and electives in section timetables
-                sub = real[((real['Branch'] == b) | (real['Branch'] == 'CSE')) & (real['Semester'] == sem)]
-            else:
-                sub = real[(real['Branch'] == b) & (real['Semester'] == sem)]
-
+            sub = real[(real['Branch'] == b) & (real['Semester'] == sem)]
             if sub.empty:
                 continue
-            
             sub.to_csv(f"Timetables/By Branch Semester/{b} Semester {clean}.csv", index=False)
             
             pivot = pd.DataFrame(index=WEEKDAYS, columns=TIME_SLOTS).fillna("")
-            for d in WEEKDAYS:
-                for sl in TIME_SLOTS:
+            for d in WEEKDAYS: # Iterate through each day
+                for sl in TIME_SLOTS: # Iterate through each time slot
                     entries_for_slot = []
                     for r in CLASSROOMS + LABS:
                         entry = tt[d][sl][r]
                         if entry and entry[0] != "BREAK":
                             entry_groups = entry[4]
                             if isinstance(entry_groups, list):
-                                if (b, sem) in entry_groups or (b.replace(' ', ''), sem) in entry_groups:
-                                    entries_for_slot.append(f"{entry[2]}-{entry[3]}-{r}")
+                                if (b, sem) in entry_groups:
+                                    entries_for_slot.append((entry[0], entry[1], entry[2], entry[3], r))
+                            else:
+                                if (entry_groups[0], entry_groups[1]) == (b, sem):
+                                    entries_for_slot.append((entry[0], entry[1], entry[2], entry[3], r))
 
-                    pivot.loc[d, sl] = " | ".join(sorted(list(set(entries_for_slot))))
+                    # Group electives by basket for display
+                    grouped_electives = {}
+                    non_electives_strs = []
+
+                    for entry_code, entry_fac, entry_title, entry_type, entry_room in entries_for_slot:
+                        if "Elective" in entry_title:
+                            basket_name = entry_code  # Use Course Code as basket name
+                            if basket_name not in grouped_electives:
+                                grouped_electives[basket_name] = {'type': entry_type, 'rooms': []}
+                            grouped_electives[basket_name]['rooms'].append(entry_room)
+                        else:
+                            non_electives_strs.append(f"{entry_title}-{entry_type}-{entry_room}")
+
+                    # Format grouped electives
+                    elective_strs = []
+                    for basket_name, data in grouped_electives.items():
+                        # Get subject titles for the basket to sort rooms correctly
+                        sem_electives = electives_data.get(basket_name, {}).get(sem, [])
+                        if not sem_electives and '+' in basket_name: # Handle combined baskets like Basket-1+Basket-2
+                            b1, b2 = basket_name.split('+')
+                            sem_electives.extend(electives_data.get(b1, {}).get(sem, []))
+                            sem_electives.extend(electives_data.get(b2, {}).get(sem, []))
+
+                        # Create a mapping from subject code to room
+                        # This needs to be based on the original elective subjects, not the combined entries
+                        # We need to find the room for each individual subject within the basket
+                        subject_room_map = {}
+                        for sub_entry in entries_for_slot:
+                            if sub_entry[0] in [s['code'] for s in sem_electives]:
+                                subject_room_map[sub_entry[0]] = sub_entry[4]
+
+                        sorted_rooms = [subject_room_map.get(sub['code']) for sub in sem_electives if sub['code'] in subject_room_map]
+                        
+                        elective_strs.append(f"{basket_name} Elective-{data['type']}-{' | '.join(sorted_rooms)}")
+
+                    # Combine all entries for the cell
+                    all_entries_strs = non_electives_strs + elective_strs
+                    pivot.loc[d, sl] = " | ".join(all_entries_strs)
 
             pivot.to_csv(f"Timetables/By Branch Semester/{b} Semester {clean} Formatted.csv")
             print(f"B+S Formatted -> {b} Semester {clean} Formatted.csv")
