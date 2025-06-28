@@ -148,40 +148,65 @@ def init_timetable():
         for slot,label in BREAK_SLOTS.items():
             for r in rooms:
                 tt[day][slot][r] = ("BREAK", label, "", "", "", "")
-    return tt
+    teacher_schedule = {day: {slot: {} for slot in TIME_SLOTS} for day in WEEKDAYS}
+    return tt, teacher_schedule
 
-def find_available_rooms(tt, day, slot, strength, is_practical):
-    """Finds available rooms or labs based on strength and session type."""
+def find_available_rooms(tt, day, slot, strength, is_practical, semester=None):
+    """Finds available rooms or labs based on strength, session type, and semester floor constraints."""
+    
+    possible_rooms = []
     if is_practical:
-        available = [r for r in LABS if tt[day][slot][r] is None and LAB_CAPACITIES.get(r, 0) >= strength]
-        if not available:
-            print(f"WARNING: No lab available for strength {strength} on {day} at {slot}.")
-        return sorted(available, key=lambda r: LAB_CAPACITIES.get(r, 0))
+        rooms_to_check = LABS
+        capacities = LAB_CAPACITIES
     else:
-        # Prioritize rooms with capacity >= strength, sorted by capacity
-        suitable_classrooms = []
-        for r, cap in CLASSROOM_CAPACITIES.items():
-            # Effective capacity for 86-seater rooms is 90
-            effective_cap = 90 if cap == 86 else cap
-            if tt[day][slot][r] is None and effective_cap >= strength:
-                suitable_classrooms.append(r)
-        
-        if not suitable_classrooms:
-            print(f"WARNING: No classroom available for strength {strength} on {day} at {slot}.")
-        
-        # Sort by capacity to fill smaller rooms first
-        return sorted(suitable_classrooms, key=lambda r: CLASSROOM_CAPACITIES.get(r, 0))
+        rooms_to_check = CLASSROOMS
+        capacities = CLASSROOM_CAPACITIES
 
-def has_conflict(tt, day, slot, fac, branch, sem):
+    # Apply floor constraints for non-practical sessions
+    floor_prefix = None
+    if semester and not is_practical: # Floor constraints only for core subjects
+        if '2.0' in semester:
+            floor_prefix = 'C2' # 1st Year -> 2nd Floor (Rooms C2xx)
+        elif '4.0' in semester:
+            floor_prefix = 'C3' # 2nd Year -> 3rd Floor (Rooms C3xx)
+        elif '6.0' in semester:
+            floor_prefix = None # 3rd Year -> Any Floor
+
+    preferred_floor_rooms = []
+    other_floor_rooms = []
+
+    for r in rooms_to_check:
+        cap = capacities.get(r, 0)
+        effective_cap = 90 if cap == 86 and not is_practical else cap # 86-seater rooms can hold up to 90 for non-practicals
+        
+        if tt[day][slot][r] is None and effective_cap >= strength:
+            if floor_prefix and r.startswith(floor_prefix):
+                preferred_floor_rooms.append(r)
+            else:
+                other_floor_rooms.append(r)
+
+    # Prioritize preferred floor, then other floors, sorted by capacity (descending)
+    sorted_preferred = sorted(preferred_floor_rooms, key=lambda r: capacities.get(r, 0), reverse=True)
+    sorted_other = sorted(other_floor_rooms, key=lambda r: capacities.get(r, 0), reverse=True)
+    
+    available_rooms = sorted_preferred + sorted_other
+
+    if not available_rooms:
+        room_type = "lab" if is_practical else "classroom"
+        print(f"WARNING: No suitable {room_type} available for strength {strength} on {day} at {slot} (Sem: {semester}).")
+    
+    return available_rooms
+
+def has_conflict(tt, day, slot, fac, branch, sem, teacher_schedule):
+    # Check for faculty conflict
+    faculties = [f.strip() for f in re.split(r'\s*&\s*|\s*and\s*|\s*/\s*', fac)]
+    for f in faculties:
+        if f in teacher_schedule[day][slot]:
+            return True
+
     for r in CLASSROOMS + LABS:
         e = tt[day][slot][r]
         if isinstance(e,tuple) and e[0]!="BREAK":
-            # Check for faculty conflict
-            existing_facs = [f.strip() for f in e[1].split(' / ')]
-            new_facs = [f.strip() for f in fac.split(' / ')]
-            if any(f in existing_facs for f in new_facs):
-                return True
-            
             d = e[4:]
             if len(d)==1 and (branch,sem) in d[0]:
                 return True
@@ -238,7 +263,7 @@ def load_and_group_electives(filepath):
                 })
     return electives
 
-def schedule_electives(tt, electives_data, all_branches, sched):
+def schedule_electives(tt, electives_data, all_branches, sched, teacher_schedule):
     print("--- Scheduling Electives: pairing B1+B2 and B3+B4 ---")
     pairs = [("Basket-1", "Basket-2"), ("Basket-3", "Basket-4")]
     
@@ -270,7 +295,7 @@ def schedule_electives(tt, electives_data, all_branches, sched):
             random.shuffle(slots)
             
             for day, slot in slots:
-                if any(has_conflict(tt, day, slot, "any_faculty", b, sem) for b in all_branches):
+                if any(has_conflict(tt, day, slot, "any_faculty", b, sem, teacher_schedule) for b in all_branches):
                     continue
                 rooms_free = [r for r in CLASSROOMS if tt[day][slot][r] is None]
                 if len(rooms_free) >= len(subs):
@@ -281,9 +306,11 @@ def schedule_electives(tt, electives_data, all_branches, sched):
             else:
                 print(f"INFO: Could not find enough slots for combined basket {b1}+{b2} for Sem {sem}. Splitting it.")
                 if subs1:
-                    baskets_to_schedule.append({'label': b1, 'sem': sem, 'subs': subs1})
+                    for sub in subs1:
+                        baskets_to_schedule.append({'label': b1, 'sem': sem, 'subs': [sub]})
                 if subs2:
-                    baskets_to_schedule.append({'label': b2, 'sem': sem, 'subs': subs2})
+                    for sub in subs2:
+                        baskets_to_schedule.append({'label': b2, 'sem': sem, 'subs': [sub]})
 
     for basket in baskets_to_schedule:
         label, sem, subs = basket['label'], basket['sem'], basket['subs']
@@ -297,7 +324,7 @@ def schedule_electives(tt, electives_data, all_branches, sched):
                 slots = [(d, sl) for d in WEEKDAYS for sl in TIME_SLOTS if sl not in BREAK_SLOTS]
                 random.shuffle(slots)
                 for day, slot in slots:
-                    if any(has_conflict(tt, day, slot, "any_faculty", b, sem) for b in all_branches):
+                    if any(has_conflict(tt, day, slot, "any_faculty", b, sem, teacher_schedule) for b in all_branches):
                         continue
                     
                     rooms_free = [r for r in CLASSROOMS if tt[day][slot][r] is None]
@@ -314,6 +341,9 @@ def schedule_electives(tt, electives_data, all_branches, sched):
                             if CLASSROOM_CAPACITIES.get(room, 0) >= sub['strength']:
                                 entry = (sub['code'], sub['faculty'], sub['title'], stype, [(b, sem) for b in all_branches])
                                 tt[day][slot][room] = entry
+                                faculties = [f.strip() for f in re.split(r'\s*&\s*|\s*and\s*|\s*/\s*', sub['faculty'])]
+                                for f in faculties:
+                                    teacher_schedule[day][slot][f] = sub['code']
                                 sched[f"{label}-{stype}"] = sched.get(f"{label}-{stype}", 0) + 1
                                 placed[sub['code']][stype] += 1
                                 rooms_free.remove(room) # Room is now taken
@@ -322,6 +352,8 @@ def schedule_electives(tt, electives_data, all_branches, sched):
                                 break
                         if not suitable_room_found:
                             print(f"WARNING: Could not find a suitable room for elective {sub['code']} with strength {sub['strength']}")
+                            # If a suitable room is not found, do not schedule this elective
+                            continue
 
                     if rooms_assigned == len(subs):
                         found = True
@@ -331,7 +363,7 @@ def schedule_electives(tt, electives_data, all_branches, sched):
                     print(f"WARNING: Could not schedule all {stype} for {label} Sem {sem}")
 
     print("--- Finished Paired Electives ---")
-    return tt, grouped_for_return
+    return tt, grouped_for_return, teacher_schedule
 
 
 def load_data(branches):
@@ -357,11 +389,12 @@ def load_data(branches):
 def generate(branches, electives_filepath):
     df=load_data(branches)
     if df.empty:
-        print("🚫 No input data. Exiting."); return None,None,None
-    tt,sched=init_timetable(),{}
+        print("🚫 No input data. Exiting."); return None,None,None,None,None
+    tt, teacher_schedule = init_timetable()
+    sched={}
     electives_data=load_and_group_electives(electives_filepath)
     all_branches=[b.upper() for b in branches]
-    tt,grouped=schedule_electives(tt,electives_data,all_branches,sched)
+    tt,grouped,teacher_schedule=schedule_electives(tt,electives_data,all_branches,sched, teacher_schedule)
 
     # Exclude electives from core scheduling
     elective_codes=set()
@@ -392,18 +425,34 @@ def generate(branches, electives_filepath):
 
     print("--- Scheduling Core Courses ---")
     sessions=[]
-    for (code,fac_str),grp in df.groupby(['Course Code','Faculty']):
-        title=grp['Course Title'].iloc[0]
-        groups=list(zip(grp['branch'],grp['Semester']))
-        strength = grp['Strength'].sum() # Correctly sum strength for combined classes
-        L,T,P=int(grp['L'].fillna(0).max()),int(grp['T'].fillna(0).max()),int(grp['P'].fillna(0).max())
-        
-        # Create a single session for all faculties
-        faculties = ' / '.join([f.strip() for f in fac_str.split(' / ')])
-        
-        sessions += [{'code':code,'title':title,'fac':faculties,'groups':groups,'type':'Lecture', 'strength': strength}]*L
-        sessions += [{'code':code,'title':title,'fac':faculties,'groups':groups,'type':'Tutorial', 'strength': strength}]*T
-        sessions += [{'code':code,'title':title,'fac':faculties,'groups':groups,'type':'Practical', 'strength': strength}]*P
+    for _, row in core_df.iterrows():
+        code, title, fac_str, branch, sem, strength, L, T, P = (
+            row['Course Code'], row['Course Title'], row['Faculty'], 
+            row['branch'], row['Semester'], row['Strength'],
+            int(row['L']), int(row['T']), int(row['P'])
+        )
+
+        faculties = [f.strip() for f in re.split(r'\s*&\s*|\s*and\s*|\s*/\s*', fac_str)]
+        is_cse_core = branch.upper() == 'CSE'
+
+        if is_cse_core:
+            if len(faculties) == 1: # Single teacher, combined class
+                combined_strength = strength * 2 # Assuming strength is per section
+                sessions += [{'code':code,'title':title,'fac':faculties[0],'groups':[(branch, sem)],'type':'Lecture', 'strength': combined_strength}]*L
+                sessions += [{'code':code,'title':title,'fac':faculties[0],'groups':[(branch, sem)],'type':'Tutorial', 'strength': combined_strength}]*T
+                sessions += [{'code':code,'title':title,'fac':faculties[0],'groups':[(branch, sem)],'type':'Practical', 'strength': combined_strength}]*P
+            else: # Multiple teachers, split classes
+                strength_per_section = strength
+                sessions += [{'code':code,'title':title,'fac':faculties[0],'groups':[('CSE A', sem)],'type':'Lecture', 'strength': strength_per_section}]*L
+                sessions += [{'code':code,'title':title,'fac':faculties[1],'groups':[('CSE B', sem)],'type':'Lecture', 'strength': strength_per_section}]*L
+                sessions += [{'code':code,'title':title,'fac':faculties[0],'groups':[('CSE A', sem)],'type':'Tutorial', 'strength': strength_per_section}]*T
+                sessions += [{'code':code,'title':title,'fac':faculties[1],'groups':[('CSE B', sem)],'type':'Tutorial', 'strength': strength_per_section}]*T
+                sessions += [{'code':code,'title':title,'fac':faculties[0],'groups':[('CSE A', sem)],'type':'Practical', 'strength': strength_per_section}]*P
+                sessions += [{'code':code,'title':title,'fac':faculties[1],'groups':[('CSE B', sem)],'type':'Practical', 'strength': strength_per_section}]*P
+        else: # Non-CSE subjects
+            sessions += [{'code':code,'title':title,'fac':faculties[0],'groups':[(branch, sem)],'type':'Lecture', 'strength': strength}]*L
+            sessions += [{'code':code,'title':title,'fac':faculties[0],'groups':[(branch, sem)],'type':'Tutorial', 'strength': strength}]*T
+            sessions += [{'code':code,'title':title,'fac':faculties[0],'groups':[(branch, sem)],'type':'Practical', 'strength': strength}]*P
 
     max_attempts=5
     for attempt in range(max_attempts):
@@ -412,7 +461,6 @@ def generate(branches, electives_filepath):
         slots=[(d,sl) for d in WEEKDAYS for sl in TIME_SLOTS if sl not in BREAK_SLOTS]
         random.shuffle(slots)
         for day,slot in slots:
-            used_fac={e[1] for e in tt[day][slot].values() if e and e[0]!="BREAK"}
             used_grp=set()
             for e in tt[day][slot].values():
                 if e and e[0]!="BREAK":
@@ -422,10 +470,131 @@ def generate(branches, electives_filepath):
             for sess in sessions[:]:
                 is_prac = sess['type']=='Practical'
                 
+                if is_prac:
+                    # Try to schedule a 2-hour block first
+                    next_slot_index = TIME_SLOTS.index(slot) + 1
+                    if next_slot_index < len(TIME_SLOTS) and TIME_SLOTS[next_slot_index] not in BREAK_SLOTS:
+                        rooms = find_available_rooms(tt, day, slot, sess['strength'], is_prac, sess['groups'][0][1])
+                        if rooms:
+                            room = rooms[0]
+                            if tt[day][TIME_SLOTS[next_slot_index]][room] is None:
+                                entry=(sess['code'],sess['fac'],sess['title'],sess['type'],sess['groups'])
+                                tt[day][slot][room]=entry
+                                tt[day][TIME_SLOTS[next_slot_index]][room]=entry
+                                faculties = [f.strip() for f in re.split(r'\s*&\s*|\s*and\s*|\s*/\s*', sess['fac'])]
+                                for f in faculties:
+                                    teacher_schedule[day][slot][f] = sess['code']
+                                    teacher_schedule[day][TIME_SLOTS[next_slot_index]][f] = sess['code']
+                                used_grp.update(sess['groups'])
+                                sessions.remove(sess)
+                                sched.setdefault(sess['code'], {'Lecture': 0, 'Tutorial': 0, 'Practical': 0})[sess['type']] += 1
+                                placed+=1
+                                continue
+
+                    
+                
                 # Check faculty and group conflicts
-                if sess['fac'] in used_fac:
+                if has_conflict(tt, day, slot, sess['fac'], sess['groups'][0][0], sess['groups'][0][1], teacher_schedule):
                     continue
                 if any(g in used_grp for g in sess['groups']):
+                    continue
+
+                # CSE Section Split Logic
+                is_cse_core = any(b.upper() == 'CSE' for b, s in sess['groups']) and not is_prac
+                if is_cse_core:
+                    strength_per_section = sess['strength'] // 2
+                    rooms = find_available_rooms(tt, day, slot, strength_per_section, is_prac, sess['groups'][0][1])
+                    if len(rooms) < 2:
+                        print(f"WARNING: Not enough rooms for CSE sections for {sess['code']} on {day} at {slot}.")
+                        # Try to schedule as a combined class if split fails
+                        rooms = find_available_rooms(tt, day, slot, sess['strength'], is_prac, sess['groups'][0][1])
+                        if not rooms:
+                            continue
+                        room = rooms[0]
+                        entry=(sess['code'],sess['fac'],sess['title'],sess['type'],sess['groups'])
+                        tt[day][slot][room]=entry
+                        faculties = [f.strip() for f in re.split(r'\s*&\s*|\s*and\s*|\s*/\s*', sess['fac'])]
+                        for f in faculties:
+                            teacher_schedule[day][slot][f] = sess['code']
+                        used_grp.update(sess['groups'])
+                        sessions.remove(sess)
+                        sched.setdefault(sess['code'], {'Lecture': 0, 'Tutorial': 0, 'Practical': 0})[sess['type']] += 1
+                        placed+=1
+                        continue
+                    
+                    room_a, room_b = rooms[0], rooms[1]
+                    
+                    # Assign Section A
+                    groups_a = [(b, s) if b.upper() != 'CSE' else ('CSE A', s) for b, s in sess['groups']]
+                    entry_a = (sess['code'], sess['fac'], sess['title'], sess['type'], groups_a)
+                    tt[day][slot][room_a] = entry_a
+
+                    # Assign Section B
+                    groups_b = [(b, s) if b.upper() != 'CSE' else ('CSE B', s) for b, s in sess['groups']]
+                    entry_b = (sess['code'], sess['fac'], sess['title'], sess['type'], groups_b)
+                    tt[day][slot][room_b] = entry_b
+                    
+                    faculties = [f.strip() for f in re.split(r'\s*&\s*|\s*and\s*|\s*/\s*', sess['fac'])]
+                    for f in faculties:
+                        teacher_schedule[day][slot][f] = sess['code']
+                    used_grp.update(sess['groups'])
+                    sessions.remove(sess)
+                    sched.setdefault(sess['code'], {'Lecture': 0, 'Tutorial': 0, 'Practical': 0})[sess['type']] += 1
+                    placed+=1
+                    continue
+
+                # Non-CSE core subjects and tutorials
+                rooms = find_available_rooms(tt, day, slot, sess['strength'], is_prac, sess['groups'][0][1])
+                if not rooms:
+                    print(f"DEBUG: No room for {sess['type']} {sess['code']} on {day} at {slot}.")
+                    continue
+                
+                room = rooms[0]
+                entry=(sess['code'],sess['fac'],sess['title'],sess['type'],sess['groups'])
+                tt[day][slot][room]=entry
+                faculties = [f.strip() for f in re.split(r'\s*&\s*|\s*and\s*|\s*/\s*', sess['fac'])]
+                for f in faculties:
+                    teacher_schedule[day][slot][f] = sess['code']
+                used_grp.update(sess['groups'])
+                sessions.remove(sess)
+                sched.setdefault(sess['code'], {'Lecture': 0, 'Tutorial': 0, 'Practical': 0})[sess['type']] += 1
+                placed+=1
+                continue
+                
+                # Check faculty and group conflicts
+                if has_conflict(tt, day, slot, sess['fac'], sess['groups'][0][0], sess['groups'][0][1], teacher_schedule):
+                    continue
+                if any(g in used_grp for g in sess['groups']):
+                    continue
+
+                # CSE Section Split Logic
+                is_cse_core = any(b.upper() == 'CSE' for b, s in sess['groups']) and not is_prac
+                if is_cse_core:
+                    strength_per_section = sess['strength'] // 2
+                    rooms = find_available_rooms(tt, day, slot, strength_per_section, is_prac, sess['groups'][0][1])
+                    if len(rooms) < 2:
+                        print(f"WARNING: Not enough rooms for CSE sections for {sess['code']} on {day} at {slot}.")
+                        continue
+                    
+                    room_a, room_b = rooms[0], rooms[1]
+                    
+                    # Assign Section A
+                    groups_a = [(b, s) if b.upper() != 'CSE' else ('CSE A', s) for b, s in sess['groups']]
+                    entry_a = (sess['code'], sess['fac'], sess['title'], sess['type'], groups_a)
+                    tt[day][slot][room_a] = entry_a
+
+                    # Assign Section B
+                    groups_b = [(b, s) if b.upper() != 'CSE' else ('CSE B', s) for b, s in sess['groups']]
+                    entry_b = (sess['code'], sess['fac'], sess['title'], sess['type'], groups_b)
+                    tt[day][slot][room_b] = entry_b
+                    
+                    faculties = [f.strip() for f in re.split(r'\s*&\s*|\s*and\s*|\s*/\s*', sess['fac'])]
+                    for f in faculties:
+                        teacher_schedule[day][slot][f] = sess['code']
+                    used_grp.update(sess['groups'])
+                    sessions.remove(sess)
+                    sched.setdefault(sess['code'], {'Lecture': 0, 'Tutorial': 0, 'Practical': 0})[sess['type']] += 1
+                    placed+=1
                     continue
 
                 # Historical conflict
@@ -445,44 +614,62 @@ def generate(branches, electives_filepath):
                 is_cse_core = any(b.upper() == 'CSE' for b, s in sess['groups']) and not is_prac
                 if is_cse_core:
                     strength_per_section = sess['strength'] // 2
-                    rooms = find_available_rooms(tt, day, slot, strength_per_section, is_prac)
+                    rooms = find_available_rooms(tt, day, slot, strength_per_section, is_prac, sess['groups'][0][1])
                     if len(rooms) < 2:
-                        print(f"WARNING: Not enough rooms for CSE sections for {sess['code']} on {day} at {slot}.")
-                        continue
-                    
-                    room_a, room_b = rooms[0], rooms[1]
-                    
-                    # Assign Section A
-                    groups_a = [(b, s) if b.upper() != 'CSE' else ('CSE A', s) for b, s in sess['groups']]
-                    entry_a = (sess['code'], sess['fac'], sess['title'], sess['type'], groups_a)
-                    tt[day][slot][room_a] = entry_a
+                        # If not enough rooms for split sections, try to schedule as a combined class
+                        rooms = find_available_rooms(tt, day, slot, sess['strength'], is_prac, sess['groups'][0][1])
+                        if not rooms:
+                            continue
+                        room = rooms[0]
+                        entry=(sess['code'],sess['fac'],sess['title'],sess['type'],sess['groups'])
+                        tt[day][slot][room]=entry
+                        faculties = [f.strip() for f in re.split(r'\s*&\s*|\s*and\s*|\s*/\s*', sess['fac'])]
+                        for f in faculties:
+                            teacher_schedule[day][slot][f] = sess['code']
+                        used_grp.update(sess['groups'])
+                        sessions.remove(sess)
+                        sched.setdefault(sess['code'], {'Lecture': 0, 'Tutorial': 0, 'Practical': 0})[sess['type']] += 1
+                        placed+=1
+                    else:
+                        room_a, room_b = rooms[0], rooms[1]
+                        
+                        # Assign Section A
+                        groups_a = [(b, s) if b.upper() != 'CSE' else ('CSE A', s) for b, s in sess['groups']]
+                        entry_a = (sess['code'], sess['fac'], sess['title'], sess['type'], groups_a)
+                        tt[day][slot][room_a] = entry_a
 
-                    # Assign Section B
-                    groups_b = [(b, s) if b.upper() != 'CSE' else ('CSE B', s) for b, s in sess['groups']]
-                    entry_b = (sess['code'], sess['fac'], sess['title'], sess['type'], groups_b)
-                    tt[day][slot][room_b] = entry_b
-                    
-                    used_fac.add(sess['fac'])
-                    used_grp.update(sess['groups'])
-                    sessions.remove(sess)
-                    sched.setdefault(sess['code'], {'Lecture': 0, 'Tutorial': 0, 'Practical': 0})[sess['type']] += 1
-                    placed+=1
+                        # Assign Section B
+                        groups_b = [(b, s) if b.upper() != 'CSE' else ('CSE B', s) for b, s in sess['groups']]
+                        entry_b = (sess['code'], sess['fac'], sess['title'], sess['type'], groups_b)
+                        tt[day][slot][room_b] = entry_b
+                        
+                        faculties = [f.strip() for f in re.split(r'\s*&\s*|\s*and\s*|\s*/\s*', sess['fac'])]
+                        for f in faculties:
+                            teacher_schedule[day][slot][f] = sess['code']
+                        used_grp.update(sess['groups'])
+                        sessions.remove(sess)
+                        sched.setdefault(sess['code'], {'Lecture': 0, 'Tutorial': 0, 'Practical': 0})[sess['type']] += 1
+                        placed+=1
                 else:
-                    rooms = find_available_rooms(tt, day, slot, sess['strength'], is_prac)
+                    rooms = find_available_rooms(tt, day, slot, sess['strength'], is_prac, sess['groups'][0][1])
                     if not rooms:
                         continue
                     
                     room = rooms[0]
                     entry=(sess['code'],sess['fac'],sess['title'],sess['type'],sess['groups'])
                     tt[day][slot][room]=entry
-                    used_fac.add(sess['fac'])
+                    faculties = [f.strip() for f in re.split(r'\s*&\s*|\s*and\s*|\s*/\s*', sess['fac'])]
+                    for f in faculties:
+                        teacher_schedule[day][slot][f] = sess['code']
                     used_grp.update(sess['groups'])
                     sessions.remove(sess)
                     sched.setdefault(sess['code'], {'Lecture': 0, 'Tutorial': 0, 'Practical': 0})[sess['type']] += 1
                     placed+=1
         if placed==0 and attempt==max_attempts-1 and sessions:
-            print(f"Warning: Couldn't place all sessions; {len(sessions)} remain.")
-    return tt,df,sched,electives_data
+            print(f"Warning: Couldn't place all sessions; {len(sessions)} remain. Details:")
+            for sess in sessions:
+                print(f"  - Code: {sess['code']}, Type: {sess['type']}, Strength: {sess['strength']}, Groups: {sess['groups']}")
+    return tt,df,sched,electives_data,teacher_schedule
 
 def verify_and_export(sched,df):
     recs=[]
@@ -608,7 +795,7 @@ def main():
         create_dirs()
         branches=["dsai","ece","cse"]
         electives_filepath = os.path.join(os.getcwd(), "Electives.csv")
-        tt,df,sched,electives_data=generate(branches,electives_filepath)
+        tt,df,sched,electives_data,teacher_schedule=generate(branches,electives_filepath)
         if tt is None: return
         verify_and_export(sched,df)
         combined=save_combined(tt)
