@@ -1,0 +1,16 @@
+Course Code,Course Title,Lectures,Tutorials,Practicals,Self-Study,Credits,Faculty,Classroom,Semester,Electives,Branch,Normalized Key
+DS308,Data Security and Privacy,3,1,0,0,4,Dr. Abdul Wahid & Dr. Rajendra Hegadi,C302,6,F,DSAI,ds308-6
+DS204,Software Engineering and Services,3,0,2,0,4,Dr. Animesh Chaturvedi,C003,4,F,DSAI,ds204-4
+DS309,Cloud Computing,3,0,0,4,4,Dr. Animesh Chaturvedi,C302,6,F,DSAI,ds309-6
+MA202,Linear Algebra,3,1,0,0,4,Dr. Chinmayanand,C003,4,F,DSAI,ma202-4
+CS162,Optimization,3,1,0,0,2,Dr. Dibyajyoti Guha,C004,2,F,DSAI,cs162-2
+CS164,Computer Architecture,3,0,2,0,2,Dr. Manjunath K V,C204,2,F,DSAI,cs164-2
+CS204,Operating Systems,3,1,0,0,4,Dr. Manjunath K V,C003,4,F,DSAI,cs204-4
+HS206,Industrial Social Psychology,3,0,0,0,3,Dr. Navyashree,C003,4,F,DSAI,hs206-4
+HS161,English Language and Communication,3,0,0,0,3,Dr. Rajesh N S,C204,2,F,DSAI,hs161-2
+CS310,Database Management System,3,1,2,0,5,Dr. Shirshendu Layek / Dr. Utkarsh Khaire,C003,4,F,DSAI,cs310-4
+DS164,Data Curation Techniques,2,0,2,0,3,Dr. Siddharth R,C002,2,F,DSAI,ds164-2
+CS163,Data Structures and Algorithms,3,0,2,0,4,Dr. Sunil Saumya,C204,2,F,DSAI,cs163-2
+DS306,Financial Data Analytics,3,0,0,4,4,Dr. Utkarsh Khaire,C302,6,F,DSAI,ds306-6
+DS205,Global Business Perspectives,3,0,0,0,3,Mr. Manmohan Singh ( Course Coordinator: Dr. Rajendra Hegadi),C003,4,F,DSAI,ds205-4
+DS307,Innovation and Entrepreneurship,3,1,0,0,4,Mr. Ram Subramanian ( Course Coordinator: Dr. Manjunath Kv),C302,6,F,DSAI,ds307-6

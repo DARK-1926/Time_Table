@@ -1,0 +1,12 @@
+Course Code,Course Title,Lectures,Tutorials,Practicals,Self-Study,Credits,Faculty,Classroom,Semester,Electives,Branch,Normalized Key
+MA202,Linear Algebra,3,1,0,0,4,Dr. Anand Barangi,C104,4,F,CSE,ma202-4
+CS165,Mathematical foundations of Computing,3,0,0,0,3,Dr. Animesh Roy,C202,2,F,CSE,cs165-2
+HS204 / HS153,Economics/ Innovation and Entrepreneurship,2,1,0,0,3,Dr. Anushree Kini / Dr.deepak K T,C202/ C004,2,F,CSE,hs204 / hs153-2
+CS163,Data Structures & Algorithms,3,0,2,0,4,Dr. C. B. Akki / Dr. Suvadip Hazra,C202,2,F,CSE,cs163-2
+CS307,Machine Learning,3,0,2,0,4,Dr. Girish G N / Dr. Krishnendu Ghosh,C304,6,F,CSE,cs307-6
+HS205,Ethics,3,0,0,0,3,Dr. Jolly Thomas,C004,4,F,CSE,hs205-4
+CS206,Theory of Computation,3,1,0,0,4,Dr. Pavan / Dr. Sunil C K,C104,4,F,CSE,cs206-4
+CS310,Database Management Systems,3,1,2,0,5,Dr. Pramod Yelmewad / Dr. Abdul Wahid,C104,4,F,CSE,cs310-4
+MA163,Linear Algebra,3,1,0,0,2,Dr. Sibasankar Padhy / Dr. Somen Bhattacharjee,C202,2,F,CSE,ma163-2
+CS204,Operating System,3,0,2,0,4,Dr. Suvadip Hazra / Dr. Malay / Dr. Dibyajyothi Guha,C104,4,F,CSE,cs204-4
+CS301,Software Engineering,3,1,0,0,4,Dr. Vivekraj V K / Dr. Sunil Kumar P V,C104,4,F,CSE,cs301-4

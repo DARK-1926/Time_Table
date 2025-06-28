@@ -1,0 +1,38 @@
+Course Code,Course Title,Lectures,Tutorials,Practicals,Self-Study,Credits,Faculty,Classroom,Semester,Electives,Branch,Normalized Key
+DS308,Data Security and Privacy,3,1,0,0,4,Dr. Abdul Wahid & Dr. Rajendra Hegadi,C302,6,F,DSAI,ds308-6
+MA202,Linear Algebra,3,1,0,0,4,Dr. Anand Barangi,C104,4,F,CSE,ma202-4
+DS204,Software Engineering and Services,3,0,2,0,4,Dr. Animesh Chaturvedi,C003,4,F,DSAI,ds204-4
+DS309,Cloud Computing,3,0,0,4,4,Dr. Animesh Chaturvedi,C302,6,F,DSAI,ds309-6
+CS165,Mathematical foundations of Computing,3,0,0,0,3,Dr. Animesh Roy,C202,2,F,CSE,cs165-2
+HS204,Economics,3,1,0,0,4,Dr. Anushree Kini,C101,4,F,ECE,hs204-4
+HS204 / HS153,Economics/ Innovation and Entrepreneurship,2,1,0,0,3,Dr. Anushree Kini / Dr.deepak K T,C202/ C004,2,F,CSE,hs204 / hs153-2
+CS163,Data Structures & Algorithms,3,0,2,0,4,Dr. C. B. Akki / Dr. Suvadip Hazra,C202,2,F,CSE,cs163-2
+MA202,Linear Algebra,3,1,0,0,4,Dr. Chinmayanand,C003,4,F,DSAI,ma202-4
+CS162,Optimization,3,1,0,0,2,Dr. Dibyajyoti Guha,C004,2,F,ECE,cs162-2
+CS162,Optimization,3,1,0,0,2,Dr. Dibyajyoti Guha,C004,2,F,DSAI,cs162-2
+CS307,Machine Learning,3,0,2,0,4,Dr. Girish G N / Dr. Krishnendu Ghosh,C304,6,F,CSE,cs307-6
+CS164,Computer Architecture,3,0,2,0,2,Dr. Jagadish D N,C205,2,F,ECE,cs164-2
+HS205,Ethics,3,0,0,0,3,Dr. Jolly Thomas,C004,4,F,ECE,hs205-4
+HS205,Ethics,3,0,0,0,3,Dr. Jolly Thomas,C004,4,F,CSE,hs205-4
+CS164,Computer Architecture,3,0,2,0,2,Dr. Manjunath K V,C204,2,F,DSAI,cs164-2
+CS204,Operating Systems,3,1,0,0,4,Dr. Manjunath K V,C003,4,F,DSAI,cs204-4
+HS206,Industrial Social Psychology,3,0,0,0,3,Dr. Navyashree,C003,4,F,DSAI,hs206-4
+EC205,Control Systems,3,0,2,0,4,Dr. Pankaj Kumar,C101,4,F,ECE,ec205-4
+CS206,Theory of Computation,3,1,0,0,4,Dr. Pavan / Dr. Sunil C K,C104,4,F,CSE,cs206-4
+CS163,Data Structures and Algorithms,3,0,2,0,4,Dr. Prabhu Prasad Bm,C205,2,F,ECE,cs163-2
+EC310,Embedded Systems Design,3,1,0,0,4,Dr. Prakash Pawar,C101,4,F,ECE,ec310-4
+CS310,Database Management Systems,3,1,2,0,5,Dr. Pramod Yelmewad / Dr. Abdul Wahid,C104,4,F,CSE,cs310-4
+HS161,English Language and Communication,3,0,0,0,3,Dr. Rajesh N S,C204,2,F,DSAI,hs161-2
+HS161,English Language and Communication,3,0,0,0,3,Dr. Rajesh N S,C205/C004,2,F,ECE,hs161-2
+EC307,Wireless Communication,3,0,0,4,4,Dr. Rajib Sharma / Dr. Rao (lab),C305,6,F,ECE,ec307-6
+CS310,Database Management System,3,1,2,0,5,Dr. Shirshendu Layek / Dr. Utkarsh Khaire,C003,4,F,DSAI,cs310-4
+EC162,Network Analysis,2,1,0,0,3,Dr. Sibasankar Padhy,C205,2,F,ECE,ec162-2
+MA163,Linear Algebra,3,1,0,0,2,Dr. Sibasankar Padhy / Dr. Somen Bhattacharjee,C202,2,F,CSE,ma163-2
+DS164,Data Curation Techniques,2,0,2,0,3,Dr. Siddharth R,C002,2,F,DSAI,ds164-2
+EC204,Analog and Digital Communication,3,1,2,0,5,Dr. Somen Bhattacharjee / Dr. Jagadish D N (lab),C101,4,F,ECE,ec204-4
+CS163,Data Structures and Algorithms,3,0,2,0,4,Dr. Sunil Saumya,C204,2,F,DSAI,cs163-2
+CS204,Operating System,3,0,2,0,4,Dr. Suvadip Hazra / Dr. Malay / Dr. Dibyajyothi Guha,C104,4,F,CSE,cs204-4
+DS306,Financial Data Analytics,3,0,0,4,4,Dr. Utkarsh Khaire,C302,6,F,DSAI,ds306-6
+CS301,Software Engineering,3,1,0,0,4,Dr. Vivekraj V K / Dr. Sunil Kumar P V,C104,4,F,CSE,cs301-4
+DS205,Global Business Perspectives,3,0,0,0,3,Mr. Manmohan Singh ( Course Coordinator: Dr. Rajendra Hegadi),C003,4,F,DSAI,ds205-4
+DS307,Innovation and Entrepreneurship,3,1,0,0,4,Mr. Ram Subramanian ( Course Coordinator: Dr. Manjunath Kv),C302,6,F,DSAI,ds307-6
