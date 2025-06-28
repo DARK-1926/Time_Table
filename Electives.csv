@@ -1,11 +1,14 @@
-Electives,,,,,,,
-Basket-1,Course Code,Basket-2,Course Code,Basket-3,Course Code,Basket-4,Course Code
-Data Science with Python,CS152,Linux for Engineers,DS151,Automotive Embedded and Multimedia Systems,EC362,Data Analytics and Visualization,DS355
-Introduction to Digital VLSI Design,EC154,Introduction to Holistic Personality Development,HS156,Computer Graphics,CS462,Statistics for Health Technology,DS351
-Industry Insights Program Part 1,HS155,Photography101,HS154,Machine learning,CS307,Medical Image Analysis,DS356
-Deep Computer Vision,CS471,Blockchain Technology,CS455,Virtualization and Cloud Computing,CS469,Bioinformatics,CS472
-Large Languange Models,DS357,Introduction to 5G Network,EC361,,,,
-Natural Language Processing,CS458,Model Checking,CS365,,,,
-Deep Speech Processing,DS358,Quantum Communication,PH352,,,,
-,,Quantum HPC and AI,PH353,,,,
-,,Design Thinking and Innovation,ASD351,,,,
+Electives,,,,,,,,,,,
+Basket-1,Course Code,Strength,Basket-2,Course Code,Strength,Basket-3,Course Code,Strength,Basket-4,Course Code,Strength
+sem-2,Total: 350,,,,,,,,,,
+Data Science with Python,CS152,32,Linux for Engineers,DS151,59,,,,,,
+Introduction to Digital VLSI Design,EC154,48,Introduction to Holistic Personality Development,HS156,45,,,,,,
+Industry Insights Program Part 1,HS155,67,Photography101,HS154,99,,,,,,
+,,,,,,,,,,,
+sem-6,Total:300,,,,,,,,,,
+Deep Computer Vision,CS471,18,Blockchain Technology,CS455,36,Automotive Embedded and Multimedia Systems,EC362,57,Data Analytics and Visualization,DS355,100
+Large Languange Models,DS357,119,Introduction to 5G Network,EC361,40,Computer Graphics,CS462,82,Statistics for Health Technology,DS351,61
+Natural Language Processing,CS458,64,Model Checking,CS365,27,Machine learning,CS307,92,Medical Image Analysis,DS356,94
+Deep Speech Processing,DS358,99,Quantum Communication,PH352,46,Virtualization and Cloud Computing,CS469,69,Bioinformatics,CS472,45
+,,,Quantum HPC and AI,PH353,43,,,,,,
+,,,Design Thinking and Innovation,ASD351,108,,,,,,
